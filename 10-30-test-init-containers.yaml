@@ -1,0 +1,57 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: myprj-dev-init
+  namespace: k8s-appsody
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myprj-dev-init
+  template:
+    metadata:
+      labels:
+        app: myprj-dev-init
+        release: myprj-dev-init
+    spec:
+      restartPolicy: Always
+      serviceAccountName: appsody-sa
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      containers:
+        - resources: {}
+          name: myprj-dev
+          command:
+            - /.appsody/appsody-controller
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+            - containerPort: 9229
+              protocol: TCP
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: appsody-controller
+              mountPath: /.appsody
+            - name: appsody-workspace
+              mountPath: /project/user-app
+              subPath: workspace123/projects/myprj
+            - name: dependencies
+              mountPath: /project/user-app/node_modules
+          image: 'appsody/nodejs-express:0.2'
+          serviceAccount: appsody-sa
+      initContainers:
+        - name: controller-downloader
+          image: chilantim/controller-downloader
+          command: ["./getController.sh", "0.2.5"]
+          serviceAccount: appsody-sa
+          volumeMounts:
+            - name: appsody-controller
+              mountPath: /.appsody          
+      volumes:
+        - name: dependencies
+          emptyDir: {}
+        - name: appsody-controller
+          emptyDir: {}
+        - name: appsody-workspace
+          persistentVolumeClaim:
+            claimName: appsody-workspace

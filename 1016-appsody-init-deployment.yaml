@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+namespace: k8s-appsody
+metadata:
+  name: che-emulator
+spec:
+  selector:
+    matchLabels:
+      app: appsody
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: appsody
+    spec:
+      serviceAccountName: appsody-sa
+      containers:
+      - name: che-theia
+        securityContext: 
+          privileged: true
+        runAsUser: 0
+        image: chilantim/appsody-che-k8s:1016
+        imagePullPolicy: Always
+        command: ['/bin/sh']
+        args: ['-c', '/tmp/che-setup.sh']
+        workingDir: /workspaces/codewind-workspace
+        volumeMounts:
+          - name: appsody-workspace
+            mountPath: /workspaces
+          - name: buildah-containers
+            mountPath: /var/lib/containers
+      volumes:
+        - name: appsody-workspace
+          persistentVolumeClaim: 
+            claimName: appsody-workspace
+        - name: buildah-containers
+          emptyDir: {}
